@@ -144,6 +144,8 @@ impl EventStore for InMemoryEventStore {
 
 #[cfg(test)]
 mod test {
+    use chrono::Utc;
+
     use super::*;
 
     fn create_payloads(n: usize) -> Vec<PayloadBuilder> {
@@ -153,8 +155,8 @@ mod test {
                     .p("p".to_string())
                     .tv("tv".to_string())
                     .eid(uuid::Uuid::new_v4())
-                    .dtm("dtm".to_string())
-                    .stm("stm".to_string())
+                    .dtm(Utc::now())
+                    .stm(Utc::now())
                     .aid("aid".to_string())
             })
             .collect()

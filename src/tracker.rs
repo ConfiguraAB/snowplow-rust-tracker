@@ -9,8 +9,7 @@
 // "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 // See the Apache License Version 2.0 for the specific language governing permissions and limitations there under.
 
-use std::time::UNIX_EPOCH;
-use std::time::{SystemTime, SystemTimeError};
+use chrono::Utc;
 use uuid::Uuid;
 
 use crate::emitter::Emitter;
@@ -137,20 +136,13 @@ impl Tracker {
         event: impl PayloadAddable,
         context: Option<Vec<SelfDescribingJson>>,
     ) -> Result<Uuid, Error> {
-        let since_the_epoch =
-            SystemTime::now()
-                .duration_since(UNIX_EPOCH)
-                .map_err(|e: SystemTimeError| {
-                    Error::BuilderError(format!("Failed to get current time: {}", e.to_string()))
-                })?;
-
         let event_id = Uuid::new_v4();
 
         let mut payload_builder = Payload::builder()
             .p(self.config.platform.clone())
             .tv(self.config.version.clone())
             .eid(event_id.clone())
-            .dtm(since_the_epoch.as_millis().to_string())
+            .dtm(Utc::now())
             .aid(self.app_id.clone());
 
         if let Some(context) = context {

@@ -9,14 +9,14 @@
 // "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 // See the Apache License Version 2.0 for the specific language governing permissions and limitations there under.
 
-use std::time::{SystemTime, SystemTimeError, UNIX_EPOCH};
-
+use chrono::{DateTime, Utc};
 use derive_builder::Builder;
 use serde::{Deserialize, Serialize};
 use serde_json::json;
 use serde_json::Value;
 use uuid::Uuid;
 
+use crate::timestamp::{ts_milliseconds_string, ts_milliseconds_string_option};
 use crate::Error;
 use crate::StructuredEvent;
 use crate::Subject;
@@ -42,8 +42,16 @@ pub struct Payload {
     p: String,
     tv: String,
     pub(crate) eid: Uuid,
-    dtm: String,
-    pub(crate) stm: String,
+    #[serde(with = "ts_milliseconds_string")]
+    dtm: DateTime<Utc>,
+    #[serde(with = "ts_milliseconds_string")]
+    pub(crate) stm: DateTime<Utc>,
+
+    /// The true timestamp of the event
+    #[builder(default)]
+    #[serde(skip_serializing_if = "Option::is_none")]
+    #[serde(with = "ts_milliseconds_string_option")]
+    pub ttm: Option<DateTime<Utc>>,
 
     #[builder(default)]
     e: Option<EventType>,
@@ -78,14 +86,7 @@ impl Payload {
 
 impl PayloadBuilder {
     pub fn finalise_payload(self) -> Result<Payload, Error> {
-        let since_the_epoch =
-            SystemTime::now()
-                .duration_since(UNIX_EPOCH)
-                .map_err(|e: SystemTimeError| {
-                    Error::BuilderError(format!("Failed to get current time: {}", e.to_string()))
-                })?;
-
-        self.stm(since_the_epoch.as_millis().to_string()).build()
+        self.stm(Utc::now()).build()
     }
 }
 

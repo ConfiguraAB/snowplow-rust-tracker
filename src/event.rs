@@ -9,6 +9,7 @@
 // "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 // See the Apache License Version 2.0 for the specific language governing permissions and limitations there under.
 
+use chrono::{DateTime, Utc};
 use derive_builder::Builder;
 use serde::{Deserialize, Serialize, Serializer};
 use serde_json::{json, Value};
@@ -46,6 +47,11 @@ pub struct SelfDescribingEvent {
     #[builder(default)]
     #[serde(skip_serializing)]
     pub subject: Option<Subject>,
+
+    /// The true timestamp of the event
+    #[builder(default)]
+    #[serde(skip_serializing)]
+    pub true_tstamp: Option<DateTime<Utc>>,
 }
 
 impl SelfDescribingEvent {
@@ -55,7 +61,11 @@ impl SelfDescribingEvent {
 }
 
 impl PayloadAddable for SelfDescribingEvent {
-    fn add_to_payload(self, payload_builder: PayloadBuilder) -> PayloadBuilder {
+    fn add_to_payload(self, mut payload_builder: PayloadBuilder) -> PayloadBuilder {
+        if let Some(ttm) = self.true_tstamp {
+            payload_builder = payload_builder.ttm(ttm);
+        }
+
         payload_builder
             .e(EventType::SelfDescribingEvent)
             .ue_pr(SelfDescribingEventData::new(SelfDescribingJson::new(
@@ -113,6 +123,11 @@ pub struct StructuredEvent {
     #[builder(default)]
     #[serde(skip_serializing)]
     pub subject: Option<Subject>,
+
+    /// The true timestamp of the event
+    #[builder(default)]
+    #[serde(skip_serializing)]
+    pub true_tstamp: Option<DateTime<Utc>>,
 }
 
 // Serializer to convert the optional f64 to the JSON `String` type
@@ -135,7 +150,11 @@ impl StructuredEvent {
 }
 
 impl PayloadAddable for StructuredEvent {
-    fn add_to_payload(self, payload_builder: PayloadBuilder) -> PayloadBuilder {
+    fn add_to_payload(self, mut payload_builder: PayloadBuilder) -> PayloadBuilder {
+        if let Some(ttm) = self.true_tstamp {
+            payload_builder = payload_builder.ttm(ttm);
+        }
+
         payload_builder
             .e(EventType::StructuredEvent)
             .structured_event(self)
@@ -190,6 +209,11 @@ pub struct ScreenViewEvent {
     #[builder(default)]
     #[serde(skip_serializing)]
     pub subject: Option<Subject>,
+
+    /// The true timestamp of the event
+    #[builder(default)]
+    #[serde(skip_serializing)]
+    pub true_tstamp: Option<DateTime<Utc>>,
 }
 
 impl ScreenViewEvent {
@@ -204,6 +228,7 @@ impl PayloadAddable for ScreenViewEvent {
             schema: "iglu:com.snowplowanalytics.mobile/screen_view/jsonschema/1-0-0".to_string(),
             data: json!(self),
             subject: self.subject,
+            true_tstamp: self.true_tstamp,
         };
 
         event.add_to_payload(payload_builder)
@@ -238,6 +263,11 @@ pub struct TimingEvent {
     #[builder(default)]
     #[serde(skip_serializing)]
     pub subject: Option<Subject>,
+
+    /// The true timestamp of the event
+    #[builder(default)]
+    #[serde(skip_serializing)]
+    pub true_tstamp: Option<DateTime<Utc>>,
 }
 
 impl TimingEvent {
@@ -252,6 +282,7 @@ impl PayloadAddable for TimingEvent {
             schema: "iglu:com.snowplowanalytics.snowplow/timing/jsonschema/1-0-0".to_string(),
             data: json!(self),
             subject: self.subject,
+            true_tstamp: self.true_tstamp,
         };
 
         event.add_to_payload(payload_builder)
@@ -289,6 +320,7 @@ mod tests {
                 user_id: Some("user_1".to_string()),
                 ..Subject::default()
             })
+            .true_tstamp(Utc::now())
             .build()
             .unwrap();
 
@@ -318,6 +350,7 @@ mod tests {
                 user_id: Some("user_1".to_string()),
                 ..Subject::default()
             })
+            .true_tstamp(Utc::now())
             .build()
             .unwrap();
         let payload_builder = payload_builder();
@@ -343,6 +376,7 @@ mod tests {
                 user_id: Some("user_1".to_string()),
                 ..Subject::default()
             })
+            .true_tstamp(Utc::now())
             .build()
             .unwrap();
         let payload_builder = payload_builder();
@@ -368,6 +402,7 @@ mod tests {
                 user_id: Some("user_1".to_string()),
                 ..Subject::default()
             })
+            .true_tstamp(Utc::now())
             .build()
             .unwrap();
         let payload_builder = payload_builder();
@@ -394,8 +429,8 @@ mod tests {
             .p("platform".to_string())
             .tv(format!("rust-{}", env!("CARGO_PKG_VERSION")))
             .eid(Uuid::new_v4())
-            .dtm("1".to_string())
-            .stm("1".to_string())
+            .dtm(Utc::now())
+            .stm(Utc::now())
             .aid("test".to_string())
     }
 

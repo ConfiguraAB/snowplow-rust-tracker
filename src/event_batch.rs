@@ -9,8 +9,9 @@
 // "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 // See the Apache License Version 2.0 for the specific language governing permissions and limitations there under.
 
-use std::time::{Duration, SystemTime, SystemTimeError, UNIX_EPOCH};
+use std::time::Duration;
 
+use chrono::Utc;
 use rand::Rng;
 use serde_json::json;
 use uuid::Uuid;
@@ -58,15 +59,8 @@ impl EventBatch {
 
     /// Updates the events `stm` field in batch with the current time.
     pub fn update_event_stm(&mut self) -> Result<(), Error> {
-        let since_the_epoch =
-            SystemTime::now()
-                .duration_since(UNIX_EPOCH)
-                .map_err(|e: SystemTimeError| {
-                    Error::BuilderError(format!("Failed to get current time: {}", e.to_string()))
-                })?;
-
         for event in self.events.iter_mut() {
-            event.stm = since_the_epoch.as_millis().to_string();
+            event.stm = Utc::now();
         }
 
         Ok(())
@@ -94,6 +88,7 @@ impl EventBatch {
 mod tests {
     use std::time::Duration;
 
+    use chrono::Utc;
     use uuid::Uuid;
 
     use crate::emitter::RetryPolicy;
@@ -107,8 +102,8 @@ mod tests {
                     .p("p".to_string())
                     .tv("tv".to_string())
                     .eid(Uuid::new_v4())
-                    .dtm("dtm".to_string())
-                    .stm("stm".to_string())
+                    .dtm(Utc::now())
+                    .stm(Utc::now())
                     .aid("aid".to_string())
             })
             .collect()
@@ -116,9 +111,7 @@ mod tests {
 
     #[test]
     fn update_event_stm() {
-        let now = std::time::SystemTime::now()
-            .duration_since(std::time::UNIX_EPOCH)
-            .unwrap();
+        let now = Utc::now();
 
         let mut batch = EventBatch::new(
             Uuid::new_v4(),
@@ -133,8 +126,7 @@ mod tests {
         batch.update_event_stm().unwrap();
 
         for event in batch.events.iter() {
-            let event_stm = Duration::from_millis(event.stm.parse::<u64>().unwrap());
-            assert!(event_stm > now);
+            assert!(event.stm > now);
         }
     }
 

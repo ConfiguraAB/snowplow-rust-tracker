@@ -68,6 +68,7 @@ mod http_client;
 mod payload;
 mod snowplow;
 mod subject;
+mod timestamp;
 mod tracker;
 
 pub use emitter::{BatchEmitter, Emitter, RetryPolicy};
