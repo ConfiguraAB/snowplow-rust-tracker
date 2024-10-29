@@ -370,6 +370,7 @@ impl BatchEmitter {
                     // so we attempt to send any remaining batches before exiting
                     EmitterMessage::Close => {
                         let remaining = tokio_tasks.len();
+                        log::debug!("Closing emitter, waiting for {remaining} tasks to complete");
                         for (i, task) in tokio_tasks.iter_mut().enumerate() {
                             log::debug!("Waiting for task {}/{remaining} to complete", i + 1);
                             task.await.unwrap();
@@ -381,6 +382,8 @@ impl BatchEmitter {
                 // Discard any completed tasks in the task list
                 tokio_tasks.retain(|t| !t.is_finished());
             }
+
+            log::warn!("Remaining tasks after exiting loop: {}", tokio_tasks.len());
         });
     }
 }
