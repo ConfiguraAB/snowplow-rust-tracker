@@ -383,7 +383,7 @@ impl BatchEmitter {
                 tokio_tasks.retain(|t| !t.is_finished());
             }
 
-            log::warn!("Remaining tasks after exiting loop: {}", tokio_tasks.len());
+            log::warn!("Remaining tasks after exiting loop: {}", tokio_tasks.iter().filter(|t| !t.is_finished()).count());
         });
     }
 }
